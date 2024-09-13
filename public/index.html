@@ -8,13 +8,20 @@
 </head>
 <body>
     <div class="chat-container">
-        <div class="chat">
-            <!-- Mensajes del chat aparecerán aquí -->
+        <div class="chat-header">
+            <h2>Chat con Emeth</h2>
         </div>
-        <form>
-            <input type="text" name="message" placeholder="Escribe tu mensaje aquí..." required>
-            <button type="submit">Enviar</button>
-        </form>
+        <div class="chat-window">
+            <div class="chat" id="chat-window">
+                <!-- Mensajes del chat aparecerán aquí -->
+            </div>
+        </div>
+        <div class="chat-input">
+            <form>
+                <input type="text" name="message" id="user-input" placeholder="Escribe tu mensaje aquí..." required>
+                <button type="submit" id="send-button">Enviar</button>
+            </form>
+        </div>
     </div>
     <script src="script.js"></script>
 </body>

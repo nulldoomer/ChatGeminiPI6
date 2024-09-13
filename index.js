@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 require('dotenv').config();
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -13,11 +13,10 @@ app.use(express.static('public'));  // Servir archivos estáticos desde 'public'
 // Configura la API de Google Generative AI
 const apiKey = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey);
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-// Definir el mensaje de contexto inicial para Emeth
-const initialMessage = `
-Hola, soy Emeth, un amigable asistente virtual de la clínica Bienestar Emocional. 
+const model = genAI.getGenerativeModel({
+  model: 'gemini-1.5-flash',
+  systemInstruction: `Hola, soy Emeth, un amigable asistente virtual de la clínica Bienestar Emocional. 
 Puedo ayudarte en que te atienda uno de nuestros especialistas. 
 Aquí está la lista de nuestros especialistas con sus áreas de trabajo y sus horarios de disponibilidad:
 - Esther Logacho -> Psicología Clínica -> Lunes a Viernes -> 08:00 a 17:00
@@ -28,28 +27,48 @@ Aquí está la lista de nuestros especialistas con sus áreas de trabajo y sus h
 - Omar Ruiz -> Psicología Clínica -> Lunes a Viernes -> 08:00 a 17:00
 - Andrés Galarza -> Nutrición -> Miércoles a Viernes -> 08:00 a 17:00
 - Sofía Salazar -> Psicopedagogía -> Lunes a Viernes -> 08:00 a 17:00
-`;
+Cuando tu pidas el número del cliente, acabas la conversación y guardas la respuesta del usuario para guardarla en una base de datos.`,
+});
+
+const generationConfig = {
+  temperature: 1,
+  topP: 0.95,
+  topK: 64,
+  maxOutputTokens: 8192,
+  responseMimeType: "text/plain",
+};
 
 // Ruta para manejar el chatbot
 app.post('/chatbot', async (req, res) => {
-    const userInput = req.body.message;
+  const userInput = req.body.message;
 
-    try {
-        const chatSession = model.startChat({
-            history: [
-                { role: 'user', parts: [{ text: initialMessage }] },
-                { role: 'user', parts: [{ text: userInput }] },
-            ],
-        });
+  try {
+    const chatSession = model.startChat({
+      generationConfig,
+      history: [
+        {
+          role: "user",
+          parts: [
+            { text: "Hola" },
+          ],
+        },
+        {
+          role: "model",
+          parts: [
+            { text: "Hola! soy Emeth ¿En qué te puedo ayudar hoy?" },
+          ],
+        },
+      ],
+    });
 
-        const result = await chatSession.sendMessage(userInput);
-        res.json({ response: result.response.text() });
-    } catch (error) {
-        console.error("Error:", error);
-        res.json({ response: "Lo siento, ocurrió un error. Por favor, intenta nuevamente." });
-    }
+    const result = await chatSession.sendMessage(userInput);
+    res.json({ response: result.response.text() });
+  } catch (error) {
+    console.error("Error:", error);
+    res.json({ response: "Lo siento, ocurrió un error. Por favor, intenta nuevamente." });
+  }
 });
 
 app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
+  console.log(`Server running on http://localhost:${port}`);
 });
